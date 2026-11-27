@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>🥒 피클 합동 비서실 (Brian · Anne)</title>
+<meta name="description" content="Brian과 Anne, 그리고 양쪽 피클 비서가 함께 쓰는 합동 비서실 메시지 보드">
+<meta name="theme-color" content="#FAF6EF">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥒</text></svg>">
+<style>
+  :root{
+    --bg:#FAF6EF;
+    --bg-2:#F3EDE2;
+    --panel:#FFFFFF;
+    --ink:#26221D;
+    --ink-soft:#5C554C;
+    --muted:#948A7D;
+    --line:#EBE3D6;
+    --line-strong:#DED4C3;
+    --green:#41784D;
+    --green-deep:#2F5C39;
+    --green-soft:#EAF3EB;
+    --radius:18px;
+    --shadow:0 10px 30px rgba(74,58,36,.08), 0 2px 6px rgba(74,58,36,.05);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1100px 620px at 12% -10%, #FFFDF8 0%, rgba(255,253,248,0) 60%),
+      radial-gradient(900px 520px at 92% 108%, #F0F6EF 0%, rgba(240,246,239,0) 62%),
+      var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic",system-ui,"Segoe UI",sans-serif;
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    -webkit-text-size-adjust:100%;
+  }
+  button{font-family:inherit}
+  .app{
+    display:flex;
+    flex-direction:column;
+    width:100%;
+    max-width:880px;
+    margin:0 auto;
+    height:100dvh;
+    background:rgba(255,255,255,.55);
+    border-left:1px solid rgba(222,212,195,.45);
+    border-right:1px solid rgba(222,212,195,.45);
+  }
+  @media (min-width:900px){
+    body{padding:22px 0}
+    .app{
+      height:calc(100dvh - 44px);
+      border:1px solid var(--line-strong);
+      border-radius:26px;
+      background:var(--panel);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+  }
+
+  /* ── header ─────────────────────────────── */
+  .top{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 18px 12px;
+    background:linear-gradient(180deg,#FFFDF9 0%, #FDFAF4 100%);
+    border-bottom:1px solid var(--line);
+    padding-top:calc(14px + env(safe-area-inset-top,0px));
+  }
+  .logo{
+    flex:0 0 auto;
+    width:42px;height:42px;
+    display:grid;place-items:center;
+    font-size:22px;
+    border-radius:14px;
+    background:var(--green-soft);
+    border:1px solid #DDECDF;
+  }
+  .brand{min-width:0;flex:1 1 auto}
+  .brand h1{
+    margin:0;
+    font-size:17px;
+    line-height:1.3;
+    letter-spacing:-.3px;
+    font-weight:700;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .brand .who{color:var(--green-deep);font-weight:600}
+  .brand .sub{
+    margin:2px 0 0;
+    font-size:12.5px;
+    color:var(--muted);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .status{
+    flex:0 0 auto;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:5px 10px;
+    border-radius:999px;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    background:#F6F1E8;
+    border:1px solid var(--line);
+    white-space:nowrap;
+  }
+  .status .dot{width:7px;height:7px;border-radius:50%;background:#C9BFAF;box-shadow:0 0 0 3px rgba(201,191,175,.18)}
+  .status[data-state="live"]{background:var(--green-soft);border-color:#D6E8D9;color:var(--green-deep)}
+  .status[data-state="live"] .dot{background:#4E9C60;box-shadow:0 0 0 3px rgba(78,156,96,.18)}
+  .status[data-state="poll"]{background:#FDF3E3;border-color:#F0E0C4;color:#8A6526}
+  .status[data-state="poll"] .dot{background:#D9A441;box-shadow:0 0 0 3px rgba(217,164,65,.18)}
+  .status[data-state="error"]{background:#FCEDEC;border-color:#F3D6D3;color:#9B3B33}
+  .status[data-state="error"] .dot{background:#C9564B;box-shadow:0 0 0 3px rgba(201,86,75,.18)}
+
+  /* ── messages ───────────────────────────── */
+  .messages{
+    position:relative;
+    flex:1 1 auto;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    padding:16px 16px 8px;
+    scrollbar-width:thin;
+    scrollbar-color:#DCD3C4 transparent;
+  }
+  .messages::-webkit-scrollbar{width:9px}
+  .messages::-webkit-scrollbar-thumb{background:#DED5C6;border-radius:99px;border:2px solid transparent;background-clip:content-box}
+
+  .day{
+    display:flex;
+    justify-content:center;
+    margin:14px 0 10px;
+  }
+  .day span{
+    font-size:11.5px;
+    color:var(--muted);
+    background:#F5F0E6;
+    border:1px solid var(--line);
+    padding:3px 12px;
+    border-radius:999px;
+    letter-spacing:.1px;
+  }
+
+  .msg{
+    display:flex;
+    gap:9px;
+    align-items:flex-end;
+    margin:0 0 12px;
+    max-width:100%;
+  }
+  .msg.right{flex-direction:row-reverse}
+  .avatar{
+    flex:0 0 auto;
+    width:32px;height:32px;
+    border-radius:11px;
+    display:grid;place-items:center;
+    font-size:16px;
+    background:#F1EBE0;
+    border:1px solid var(--line);
+    margin-bottom:2px;
+  }
+  .bubble{
+    position:relative;
+    max-width:min(78%, 600px);
+    padding:9px 13px 9px;
+    border-radius:16px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    box-shadow:0 1px 2px rgba(74,58,36,.04);
+  }
+  .msg.right .bubble{border-bottom-right-radius:6px}
+  .msg.left .bubble{border-bottom-left-radius:6px}
+  .meta{
+    display:flex;
+    align-items:baseline;
+    gap:7px;
+    margin-bottom:2px;
+  }
+  .msg.right .meta{flex-direction:row-reverse}
+  .name{font-size:12px;font-weight:700;letter-spacing:-.15px}
+  .time{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .text{
+    font-size:15px;
+    line-height:1.5;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    color:var(--ink);
+  }
+  .text a{color:var(--green-deep);text-decoration:underline;text-underline-offset:2px}
+
+  .mention-tag{
+    display:inline-block;
+    padding:1px 5px;
+    margin:0 1px;
+    border-radius:7px;
+    background:#E7F2E8;
+    color:#2E6B3B;
+    font-weight:700;
+    font-size:.94em;
+    border:1px solid #D3E7D6;
+  }
+  .mention-tag.other{background:#F3EEE4;color:#7A6A50;border-color:#E8DECB}
+
+  /* sender colours */
+  .msg[data-sender="brian"] .bubble{background:#EEF4FC;border-color:#D9E4F4}
+  .msg[data-sender="brian"] .name{color:#2C5F9E}
+  .msg[data-sender="brian"] .avatar{background:#E6EFFB;border-color:#D3E2F5}
+  .msg[data-sender="anne"] .bubble{background:#FCEFF4;border-color:#F2DAE4}
+  .msg[data-sender="anne"] .name{color:#A8466C}
+  .msg[data-sender="anne"] .avatar{background:#FAE6EE;border-color:#F0D3E0}
+  .msg[data-sender="edith"] .bubble{background:#EDF6EE;border-color:#D6E9D9}
+  .msg[data-sender="edith"] .name{color:#2F6B3C}
+  .msg[data-sender="edith"] .avatar{background:#E4F2E6;border-color:#D0E6D4}
+  .msg[data-sender="anne-assistant"] .bubble{background:#FDF4E6;border-color:#F0E1C8}
+  .msg[data-sender="anne-assistant"] .name{color:#8C6420}
+  .msg[data-sender="anne-assistant"] .avatar{background:#FAEEDA;border-color:#EEDFC2}
+  .msg[data-sender="unknown"] .bubble{background:#F5F2EC;border-color:var(--line)}
+  .msg[data-sender="unknown"] .name{color:#6E6559}
+
+  .msg.pending .bubble{opacity:.62}
+  .msg.failed .bubble{border-color:#E7BEB8;background:#FDF1EF}
+  .msg.failed .time{color:#B04A3E}
+
+  .empty{
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    color:var(--muted);
+    text-align:center;
+    padding:40px 24px;
+  }
+  .empty .big{font-size:34px}
+  .empty p{margin:0;font-size:13.5px;line-height:1.6}
+
+  .to-bottom{
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    bottom:178px;
+    z-index:5;
+    border:1px solid var(--line-strong);
+    background:var(--panel);
+    color:var(--green-deep);
+    font-size:12.5px;
+    font-weight:600;
+    padding:7px 14px;
+    border-radius:999px;
+    box-shadow:0 6px 18px rgba(74,58,36,.13);
+    cursor:pointer;
+  }
+  @media (max-width:520px){
+    .to-bottom{bottom:190px}
+  }
+
+  /* ── composer ───────────────────────────── */
+  .composer{
+    flex:0 0 auto;
+    border-top:1px solid var(--line);
+    background:linear-gradient(180deg,#FFFDF9 0%, #FFFCF6 100%);
+    padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px));
+    position:relative;
+  }
+  .chips-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:9px;
+  }
+  .chips-row .bar-label{
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:.2px;
+    flex:0 0 auto;
+  }
+  .chips{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    min-width:0;
+  }
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    border:1px solid var(--line-strong);
+    background:#FFFDF9;
+    color:var(--ink-soft);
+    border-radius:999px;
+    padding:5px 11px;
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:transform .08s ease, background .15s ease, border-color .15s ease, color .15s ease;
+    white-space:nowrap;
+  }
+  .chip:hover{background:#F7F2E9}
+  .chip:active{transform:scale(.97)}
+  .chip .swatch{width:8px;height:8px;border-radius:50%;background:#C9BFAF}
+  .chip[aria-checked="true"]{color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(74,58,36,.14)}
+  .chip[data-id="brian"][aria-checked="true"]{background:#3B72B8}
+  .chip[data-id="anne"][aria-checked="true"]{background:#BB5A80}
+  .chip[data-id="edith"][aria-checked="true"]{background:#3F7D4E}
+  .chip[data-id="anne-assistant"][aria-checked="true"]{background:#A2762F}
+  .chip[data-id="brian"] .swatch{background:#3B72B8}
+  .chip[data-id="anne"] .swatch{background:#BB5A80}
+  .chip[data-id="edith"] .swatch{background:#3F7D4E}
+  .chip[data-id="anne-assistant"] .swatch{background:#A2762F}
+  .chip[aria-checked="true"] .swatch{background:rgba(255,255,255,.85)}
+
+  .quick{
+    margin-left:auto;
+    display:flex;
+    gap:6px;
+  }
+  .mention-btn{
+    border:1px dashed #CFC5B3;
+    background:#FBF8F1;
+    color:#5F6B55;
+    border-radius:999px;
+    padding:4px 10px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .mention-btn:hover{background:#F1F7F0;border-color:#BCD3BE;color:#2F6B3C}
+
+  .input-row{
+    display:flex;
+    align-items:flex-end;
+    gap:9px;
+  }
+  .field{
+    flex:1 1 auto;
+    display:flex;
+    align-items:flex-end;
+    gap:8px;
+    background:var(--panel);
+    border:1px solid var(--line-strong);
+    border-radius:16px;
+    padding:6px 6px 6px 12px;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .field:focus-within{border-color:#B9D2BC;box-shadow:0 0 0 3px rgba(65,120,77,.10)}
+  #input{
+    flex:1 1 auto;
+    border:0;
+    outline:0;
+    resize:none;
+    background:transparent;
+    color:var(--ink);
+    font-family:inherit;
+    font-size:15px;
+    line-height:1.5;
+    padding:6px 0;
+    max-height:132px;
+    min-height:24px;
+  }
+  #input::placeholder{color:#B2A896}
+  .send{
+    flex:0 0 auto;
+    border:0;
+    border-radius:12px;
+    background:var(--green);
+    color:#fff;
+    font-size:14px;
+    font-weight:700;
+    padding:9px 16px;
+    cursor:pointer;
+    box-shadow:0 2px 8px rgba(47,92,57,.22);
+    transition:background .15s ease, transform .08s ease;
+    min-width:60px;
+  }
+  .send:hover{background:var(--green-deep)}
+  .send:active{transform:scale(.97)}
+  .send[disabled]{background:#C6CEC4;box-shadow:none;cursor:default}
+  .hint{
+    margin:7px 2px 0;
+    font-size:11px;
+    color:#A79C8B;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .hint kbd{
+    font-family:inherit;
+    background:#F4EEE3;
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:0 4px;
+    font-size:10.5px;
+  }
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:calc(120px + env(safe-area-inset-bottom,0px));
+    transform:translate(-50%,10px);
+    background:#3A342C;
+    color:#FFF8EC;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:12px;
+    box-shadow:0 10px 26px rgba(0,0,0,.2);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    z-index:50;
+    max-width:88vw;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="logo" aria-hidden="true">🥒</div>
+    <div class="brand">
+      <h1>🥒 피클 합동 비서실 <span class="who">(Brian · Anne)</span></h1>
+      <p class="sub">Brian과 Anne, 그리고 양쪽 피클 비서가 함께 쓰는 방</p>
+    </div>
+    <div class="status" id="status" data-state="connecting" role="status" aria-live="polite">
+      <span class="dot" aria-hidden="true"></span><span id="statusText">연결 중…</span>
+    </div>
+  </header>
+
+  <main class="messages" id="scroller" aria-live="polite" aria-label="메시지 목록">
+    <div id="list"></div>
+    <div id="empty" class="empty" hidden>
+      <div class="big" aria-hidden="true">🥒</div>
+      <p>아직 메시지가 없어요.<br>첫 인사를 남겨 보세요.</p>
+    </div>
+  </main>
+
+  <button class="to-bottom" id="toBottom" hidden>↓ 새 메시지</button>
+
+  <footer class="composer">
+    <div class="chips-row">
+      <span class="bar-label">보내는 사람</span>
+      <div class="chips" id="chips" role="radiogroup" aria-label="보내는 사람 선택"></div>
+      <div class="quick">
+        <button class="mention-btn" type="button" data-mention="@Edith">@Edith</button>
+        <button class="mention-btn" type="button" data-mention="@Anne비서">@Anne비서</button>
+      </div>
+    </div>
+    <div class="input-row">
+      <div class="field">
+        <textarea id="input" rows="1" placeholder="메시지를 입력하세요" autocomplete="off" aria-label="메시지 입력"></textarea>
+        <button class="send" id="send" type="button">전송</button>
+      </div>
+    </div>
+    <div class="hint">
+      <span><kbd>Enter</kbd> 전송 · <kbd>Shift</kbd>+<kbd>Enter</kbd> 줄바꿈</span>
+      <span id="hintRight"></span>
+    </div>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script type="module">
+/* ────────────────────────────────────────────────────────────────
+   피클 합동 비서실 — Firebase Realtime Database (REST + SSE)
+   데이터 경로: /pickle-office/messages
+   메시지 형태: { sender, senderId?, text, ts }
+   ──────────────────────────────────────────────────────────────── */
+const BASE = 'https://pdf-ainsight-484e2-default-rtdb.firebaseio.com';
+const PATH = '/pickle-office/messages';
+const API  = `${BASE}${PATH}.json`;
+const STREAM = `${BASE}${PATH}.json`;
+const LS_SENDER = 'pickleOffice.sender';
+const LS_DRAFT  = 'pickleOffice.draft';
+const POLL_MS = 5000;
+
+const SENDERS = [
+  { id:'brian',          label:'Brian',              short:'Brian',    emoji:'🧑‍💼' },
+  { id:'anne',           label:'Anne',               short:'Anne',     emoji:'👩‍💼' },
+  { id:'edith',          label:'Edith (Brian 비서)', short:'Edith',    emoji:'🥒' },
+  { id:'anne-assistant', label:'Anne 비서',          short:'Anne 비서', emoji:'🌿' },
+];
+const SIDE = { brian:'right', edith:'right', anne:'left', 'anne-assistant':'left', unknown:'left' };
+const MENTION_RE = /(@Anne\s?비서|@Edith|@Brian|@Anne)/g;
+const MENTION_KEY = { '@edith':'edith', '@anne비서':'anne-assistant', '@brian':'brian', '@anne':'anne' };
+
+const el = {
+  list: document.getElementById('list'),
+  empty: document.getElementById('empty'),
+  scroller: document.getElementById('scroller'),
+  chips: document.getElementById('chips'),
+  input: document.getElementById('input'),
+  send: document.getElementById('send'),
+  status: document.getElementById('status'),
+  statusText: document.getElementById('statusText'),
+  toBottom: document.getElementById('toBottom'),
+  toast: document.getElementById('toast'),
+  hintRight: document.getElementById('hintRight'),
+};
+
+const state = {
+  sender: loadSender(),
+  messages: [],        // 확정 메시지 (key 기준)
+  pending: [],         // 전송 중 메시지
+  stream: null,
+  pollTimer: null,
+  pollInFlight: false,
+  live: false,
+  atBottom: true,
+  lastRenderedKeys: '',
+  typing: false,
+};
+
+/* ── helpers ─────────────────────────────────────────────────── */
+function loadSender(){
+  try{
+    const v = localStorage.getItem(LS_SENDER);
+    if (SENDERS.some(s => s.id === v)) return v;
+  }catch(e){}
+  return 'brian';
+}
+function saveSender(id){ try{ localStorage.setItem(LS_SENDER, id); }catch(e){} }
+
+function senderInfo(id){
+  return SENDERS.find(s => s.id === id) || { id:'unknown', label:'알 수 없음', short:'알 수 없음', emoji:'💬' };
+}
+
+function matchSender(raw){
+  const s = String(raw ?? '').replace(/\s+/g,'').toLowerCase();
+  if (!s) return 'unknown';
+  if (/(anne).*(비서|assistant|bot)/.test(s)) return 'anne-assistant';
+  if (/(edith|에디스)/.test(s)) return 'edith';
+  if (/(brian|브라이언)/.test(s)) return 'brian';
+  if (/(anne|앤|안네)/.test(s)) return 'anne';
+  return 'unknown';
+}
+
+function toTs(m){
+  const raw = m.ts ?? m.time ?? m.timestamp ?? m.createdAt ?? m.at;
+  const n = Number(raw);
+  if (Number.isFinite(n) && n > 0) return n < 1e12 ? n * 1000 : n;   // 초 단위도 허용
+  if (typeof raw === 'string'){
+    const d = Date.parse(raw);
+    if (!Number.isNaN(d)) return d;
+  }
+  return 0;
+}
+
+function normalize(key, m){
+  if (!m || typeof m !== 'object') return null;
+  let text = m.text ?? m.message ?? m.body ?? m.content ?? '';
+  if (typeof text !== 'string') text = String(text ?? '');
+  text = text.replace(/\r\n/g,'\n').replace(/\s+$/,'');
+  if (!text.trim()) return null;
+  return {
+    key,
+    sender: matchSender(m.sender ?? m.senderId ?? m.from ?? m.name ?? m.author ?? ''),
+    rawSender: String(m.sender ?? m.from ?? m.name ?? '').trim(),
+    text,
+    ts: toTs(m),
+  };
+}
+
+function fmtTime(ts){
+  if (!ts) return '';
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function fmtFull(ts){
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short', hour:'2-digit', minute:'2-digit' });
+}
+function dayKey(ts){
+  const d = ts ? new Date(ts) : new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+function dayLabel(ts){
+  const d = ts ? new Date(ts) : new Date();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const that = new Date(d); that.setHours(0,0,0,0);
+  const diff = Math.round((today - that) / 86400000);
+  if (diff === 0) return '오늘';
+  if (diff === 1) return '어제';
+  const sameYear = d.getFullYear() === today.getFullYear();
+  const opts = sameYear
+    ? { month:'long', day:'numeric', weekday:'short' }
+    : { year:'numeric', month:'long', day:'numeric', weekday:'short' };
+  return d.toLocaleDateString('ko-KR', opts);
+}
+
+function toast(msg){
+  el.toast.textContent = msg;
+  el.toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.toast.classList.remove('show'), 2600);
+}
+
+function setStatus(kind, text){
+  el.status.dataset.state = kind;
+  el.statusText.textContent = text;
+}
+
+/* ── rendering ───────────────────────────────────────────────── */
+function buildText(text){
+  const frag = document.createDocumentFragment();
+  let last = 0;
+  for (const m of text.matchAll(MENTION_RE)){
+    if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+    const span = document.createElement('span');
+    span.className = 'mention-tag';
+    span.textContent = m[0];
+    frag.appendChild(span);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+  return frag;
+}
+
+function messageNode(msg, extraClass){
+  const info = senderInfo(msg.sender);
+  const wrap = document.createElement('div');
+  wrap.className = `msg ${SIDE[msg.sender] || 'left'}${extraClass ? ' ' + extraClass : ''}`;
+  wrap.dataset.sender = msg.sender;
+
+  const av = document.createElement('div');
+  av.className = 'avatar';
+  av.setAttribute('aria-hidden','true');
+  av.textContent = info.emoji;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  const name = document.createElement('span');
+  name.className = 'name';
+  name.textContent = msg.sender === 'unknown' && msg.rawSender ? msg.rawSender : info.label;
+  const time = document.createElement('span');
+  time.className = 'time';
+  time.textContent = msg.pending ? '전송 중…' : fmtTime(msg.ts);
+  if (msg.ts) time.title = fmtFull(msg.ts);
+  meta.append(name, time);
+
+  const body = document.createElement('div');
+  body.className = 'text';
+  body.appendChild(buildText(msg.text));
+
+  bubble.append(meta, body);
+  wrap.append(av, bubble);
+  return wrap;
+}
+
+function sortMessages(){
+  state.messages.sort((a, b) => (a.ts - b.ts) || String(a.key).localeCompare(String(b.key)));
+}
+
+function render(){
+  sortMessages();
+  const nearBottom = state.atBottom;
+  const keys = state.messages.map(m => m.key).join('|') + '#' + state.pending.length;
+  if (keys === state.lastRenderedKeys) { if (nearBottom) scrollToBottom(false); return; }
+  state.lastRenderedKeys = keys;
+
+  const frag = document.createDocumentFragment();
+  let lastDay = null;
+  for (const msg of state.messages){
+    const dk = dayKey(msg.ts);
+    if (dk !== lastDay){
+      lastDay = dk;
+      const day = document.createElement('div');
+      day.className = 'day';
+      const s = document.createElement('span');
+      s.textContent = dayLabel(msg.ts);
+      day.appendChild(s);
+      frag.appendChild(day);
+    }
+    frag.appendChild(messageNode(msg));
+  }
+  for (const msg of state.pending) frag.appendChild(messageNode(msg, 'pending'));
+
+  el.list.replaceChildren(frag);
+  const empty = state.messages.length === 0 && state.pending.length === 0;
+  el.empty.hidden = !empty;
+  el.hintRight.textContent = state.messages.length ? `${state.messages.length}개 메시지` : '';
+
+  if (nearBottom) scrollToBottom(false);
+  else showToBottom(true);
+}
+
+function scrollToBottom(smooth = true){
+  el.scroller.scrollTo({ top: el.scroller.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+  state.atBottom = true;
+  showToBottom(false);
+}
+function showToBottom(show){ el.toBottom.hidden = !show; }
+
+el.scroller.addEventListener('scroll', () => {
+  const gap = el.scroller.scrollHeight - el.scroller.scrollTop - el.scroller.clientHeight;
+  state.atBottom = gap < 60;
+  if (state.atBottom) showToBottom(false);
+}, { passive:true });
+
+el.toBottom.addEventListener('click', () => scrollToBottom(true));
+
+/* ── data loading ────────────────────────────────────────────── */
+function applySnapshot(data){
+  const next = [];
+  if (data && typeof data === 'object'){
+    for (const [key, value] of Object.entries(data)){
+      const msg = normalize(key, value);
+      if (msg) next.push(msg);
+    }
+  }
+  state.messages = next;
+  render();
+}
+
+async function loadOnce(){
+  if (state.pollInFlight) return;
+  state.pollInFlight = true;
+  try{
+    const res = await fetch(API, { cache:'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    applySnapshot(await res.json());
+    if (!state.live) setStatus('poll', '5초마다 확인');
+  }catch(err){
+    if (!state.live) setStatus('error', '연결 오류');
+  }finally{
+    state.pollInFlight = false;
+  }
+}
+
+function startPolling(){
+  if (state.pollTimer) return;
+  state.pollTimer = setInterval(loadOnce, POLL_MS);
+}
+function stopPolling(){
+  if (state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer = null; }
+}
+
+function connectStream(){
+  if (!('EventSource' in window)){ startPolling(); setStatus('poll','5초마다 확인'); return; }
+  try{
+    const es = new EventSource(STREAM);
+    state.stream = es;
+
+    es.addEventListener('put', ev => handleStreamEvent('put', ev));
+    es.addEventListener('patch', ev => handleStreamEvent('patch', ev));
+    es.addEventListener('keep-alive', () => {});
+    es.addEventListener('cancel', () => {
+      setStatus('error','접근이 종료됨');
+      es.close(); state.stream = null; state.live = false; startPolling();
+    });
+    es.addEventListener('auth_revoked', () => {
+      setStatus('error','접근이 종료됨');
+    });
+
+    es.onopen = () => {
+      state.live = true;
+      stopPolling();
+      setStatus('live','실시간 연결');
+    };
+    es.onerror = () => {
+      state.live = false;
+      setStatus('poll','다시 연결 중…');
+      startPolling();
+      if (es.readyState === EventSource.CLOSED){
+        state.stream = null;
+        setTimeout(connectStream, 4000);
+      }
+    };
+  }catch(err){
+    startPolling();
+    setStatus('poll','5초마다 확인');
+  }
+}
+
+function handleStreamEvent(kind, ev){
+  let payload;
+  try{ payload = JSON.parse(ev.data); }catch(e){ return; }
+  if (!payload) return;
+
+  if (payload.path === '/'){
+    if (kind === 'put'){ applySnapshot(payload.data || {}); return; }
+    if (kind === 'patch'){
+      const data = payload.data || {};
+      for (const [key, value] of Object.entries(data)){
+        const idx = state.messages.findIndex(m => m.key === key);
+        const msg = value && typeof value === 'object' ? normalize(key, value) : null;
+        if (!msg){ if (idx >= 0) state.messages.splice(idx,1); }
+        else if (idx >= 0) state.messages[idx] = msg;
+        else state.messages.push(msg);
+      }
+      render();
+      return;
+    }
+  }
+
+  // 특정 키에 대한 이벤트 (path: "/-Nabc")
+  const key = String(payload.path || '').replace(/^\//,'');
+  if (!key) return;
+  const idx = state.messages.findIndex(m => m.key === key);
+  const value = payload.data && typeof payload.data === 'object' ? payload.data : null;
+  if (kind === 'patch' && idx >= 0){
+    const merged = Object.assign({}, state.messages[idx], value || {});
+    const msg = normalize(key, merged);
+    if (msg) state.messages[idx] = msg; else state.messages.splice(idx,1);
+    render();
+    return;
+  }
+  const msg = value ? normalize(key, value) : null;
+  if (!msg){ if (idx >= 0) state.messages.splice(idx,1); }
+  else if (idx >= 0) state.messages[idx] = msg;
+  else state.messages.push(msg);
+  render();
+}
+
+/* ── sending ─────────────────────────────────────────────────── */
+let sending = false;
+
+async function sendMessage(){
+  const text = el.input.value.replace(/\s+$/,'');
+  if (!text.trim() || sending) return;
+  const info = senderInfo(state.sender);
+  const ts = Date.now();
+  const tempKey = 'tmp-' + ts;
+
+  sending = true;
+  el.send.disabled = true;
+  state.pending.push({ key:tempKey, sender:info.id, rawSender:info.label, text, ts, pending:true });
+  render();
+  el.input.value = '';
+  autoGrow();
+  saveDraft('');
+  scrollToBottom(true);
+
+  const payload = { sender: info.label, senderId: info.id, text, ts };
+  try{
+    const res = await fetch(API, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const out = await res.json().catch(() => ({}));
+    state.pending = state.pending.filter(m => m.key !== tempKey);
+    if (out && out.name){
+      const msg = normalize(out.name, payload);
+      if (msg && !state.messages.some(m => m.key === msg.key)) state.messages.push(msg);
+    }
+    render();
+    loadOnce();
+  }catch(err){
+    state.pending = state.pending.filter(m => m.key !== tempKey);
+    render();
+    el.input.value = text;
+    autoGrow();
+    saveDraft(text);
+    toast('전송하지 못했어요. 연결을 확인하고 다시 시도해 주세요.');
+  }finally{
+    sending = false;
+    el.send.disabled = false;
+    el.input.focus();
+  }
+}
+
+el.send.addEventListener('click', sendMessage);
+
+el.input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !state.typing){
+    e.preventDefault();
+    sendMessage();
+  }
+});
+el.input.addEventListener('compositionstart', () => { state.typing = true; });
+el.input.addEventListener('compositionend', () => { state.typing = false; });
+
+function autoGrow(){
+  el.input.style.height = 'auto';
+  el.input.style.height = Math.min(el.input.scrollHeight, 132) + 'px';
+}
+function saveDraft(v){ try{ v ? localStorage.setItem(LS_DRAFT, v) : localStorage.removeItem(LS_DRAFT); }catch(e){} }
+function loadDraft(){ try{ return localStorage.getItem(LS_DRAFT) || ''; }catch(e){ return ''; } }
+
+el.input.addEventListener('input', () => { autoGrow(); saveDraft(el.input.value); });
+
+/* ── mentions ────────────────────────────────────────────────── */
+function insertMention(token){
+  const start = el.input.selectionStart ?? el.input.value.length;
+  const end = el.input.selectionEnd ?? el.input.value.length;
+  const before = el.input.value.slice(0, start);
+  const after = el.input.value.slice(end);
+  const needsSpace = before.length > 0 && !/\s$/.test(before);
+  const insert = (needsSpace ? ' ' : '') + token + ' ';
+  el.input.value = before + insert + after;
+  const pos = (before + insert).length;
+  el.input.setSelectionRange(pos, pos);
+  el.input.focus();
+  autoGrow();
+  saveDraft(el.input.value);
+}
+
+document.querySelectorAll('[data-mention]').forEach(btn => {
+  btn.addEventListener('click', () => insertMention(btn.dataset.mention));
+});
+
+/* ── sender chips ────────────────────────────────────────────── */
+function renderChips(){
+  const frag = document.createDocumentFragment();
+  for (const s of SENDERS){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.dataset.id = s.id;
+    b.setAttribute('role','radio');
+    b.setAttribute('aria-checked', String(state.sender === s.id));
+    const sw = document.createElement('span');
+    sw.className = 'swatch';
+    sw.setAttribute('aria-hidden','true');
+    const t = document.createElement('span');
+    t.textContent = s.short;
+    b.append(sw, t);
+    b.addEventListener('click', () => {
+      state.sender = s.id;
+      saveSender(s.id);
+      renderChips();
+      el.input.placeholder = `${senderInfo(s.id).label}로 보냅니다`;
+      el.input.focus();
+    });
+    frag.appendChild(b);
+  }
+  el.chips.replaceChildren(frag);
+}
+
+/* ── lifecycle ───────────────────────────────────────────────── */
+function bootstrap(){
+  renderChips();
+  el.input.placeholder = `${senderInfo(state.sender).label}로 보냅니다`;
+  const draft = loadDraft();
+  if (draft){ el.input.value = draft; }
+  autoGrow();
+  setStatus('connecting','연결 중…');
+  loadOnce().then(() => { scrollToBottom(false); });
+  connectStream();
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) loadOnce();
+  });
+  window.addEventListener('online', () => { loadOnce(); if (!state.live) connectStream(); });
+  window.addEventListener('offline', () => setStatus('error','오프라인'));
+
+  setInterval(() => { if (!state.live) loadOnce(); }, POLL_MS + 2500);
+}
+
+bootstrap();
+</script>
+</body>
+</html>
