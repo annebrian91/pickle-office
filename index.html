@@ -309,6 +309,7 @@
     transition:transform .08s ease, background .15s ease, border-color .15s ease, color .15s ease;
     white-space:nowrap;
   }
+  .chip .chip-sub{font-weight:500;opacity:.75;font-size:.94em}
   .chip:hover{background:#F7F2E9}
   .chip:active{transform:scale(.97)}
   .chip .swatch{width:8px;height:8px;border-radius:50%;background:#C9BFAF}
@@ -424,6 +425,22 @@
     max-width:88vw;
   }
   .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  /* ── 좁은 화면 ─────────────────────────── */
+  @media (max-width:560px){
+    .top{gap:10px;padding:12px 13px 10px;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+    .logo{width:36px;height:36px;font-size:19px;border-radius:12px}
+    .brand h1{font-size:15px;white-space:normal;line-height:1.32}
+    .brand .sub{display:none}
+    .status{padding:4px 8px}
+    .status #statusText{display:none}
+    .messages{padding:12px 12px 6px}
+    .bubble{max-width:82%}
+    .chips-row .bar-label{display:none}
+    .quick{margin-left:0}
+    .hint{font-size:10.5px}
+    .hint span:first-child{display:none}
+  }
 </style>
 </head>
 <body>
@@ -487,10 +504,10 @@ const LS_DRAFT  = 'pickleOffice.draft';
 const POLL_MS = 5000;
 
 const SENDERS = [
-  { id:'brian',          label:'Brian',              short:'Brian',    emoji:'🧑‍💼' },
-  { id:'anne',           label:'Anne',               short:'Anne',     emoji:'👩‍💼' },
-  { id:'edith',          label:'Edith (Brian 비서)', short:'Edith',    emoji:'🥒' },
-  { id:'anne-assistant', label:'Anne 비서',          short:'Anne 비서', emoji:'🌿' },
+  { id:'brian',          label:'Brian',              name:'Brian',        suffix:'',              emoji:'🧑‍💼' },
+  { id:'anne',           label:'Anne',               name:'Anne',         suffix:'',              emoji:'👩‍💼' },
+  { id:'edith',          label:'Edith (Brian 비서)', name:'Edith',        suffix:'(Brian 비서)', emoji:'🥒' },
+  { id:'anne-assistant', label:'Anne 비서',          name:'Anne 비서',    suffix:'',              emoji:'🌿' },
 ];
 const SIDE = { brian:'right', edith:'right', anne:'left', 'anne-assistant':'left', unknown:'left' };
 const MENTION_RE = /(@Anne\s?비서|@Edith|@Brian|@Anne)/g;
@@ -534,7 +551,7 @@ function loadSender(){
 function saveSender(id){ try{ localStorage.setItem(LS_SENDER, id); }catch(e){} }
 
 function senderInfo(id){
-  return SENDERS.find(s => s.id === id) || { id:'unknown', label:'알 수 없음', short:'알 수 없음', emoji:'💬' };
+  return SENDERS.find(s => s.id === id) || { id:'unknown', label:'알 수 없음', name:'알 수 없음', suffix:'', emoji:'💬' };
 }
 
 function matchSender(raw){
@@ -611,6 +628,7 @@ function toast(msg){
 function setStatus(kind, text){
   el.status.dataset.state = kind;
   el.statusText.textContent = text;
+  el.status.title = text;
 }
 
 /* ── rendering ───────────────────────────────────────────────── */
@@ -918,6 +936,10 @@ document.querySelectorAll('[data-mention]').forEach(btn => {
 });
 
 /* ── sender chips ────────────────────────────────────────────── */
+function updatePlaceholder(){
+  el.input.placeholder = `${senderInfo(state.sender).label} · 메시지를 입력하세요`;
+}
+
 function renderChips(){
   const frag = document.createDocumentFragment();
   for (const s of SENDERS){
@@ -931,13 +953,20 @@ function renderChips(){
     sw.className = 'swatch';
     sw.setAttribute('aria-hidden','true');
     const t = document.createElement('span');
-    t.textContent = s.short;
+    t.textContent = s.name;
     b.append(sw, t);
+    if (s.suffix){
+      const sub = document.createElement('span');
+      sub.className = 'chip-sub';
+      sub.textContent = s.suffix;
+      b.appendChild(sub);
+    }
+    b.setAttribute('aria-label', s.label);
     b.addEventListener('click', () => {
       state.sender = s.id;
       saveSender(s.id);
       renderChips();
-      el.input.placeholder = `${senderInfo(s.id).label}로 보냅니다`;
+      updatePlaceholder();
       el.input.focus();
     });
     frag.appendChild(b);
@@ -948,7 +977,7 @@ function renderChips(){
 /* ── lifecycle ───────────────────────────────────────────────── */
 function bootstrap(){
   renderChips();
-  el.input.placeholder = `${senderInfo(state.sender).label}로 보냅니다`;
+  updatePlaceholder();
   const draft = loadDraft();
   if (draft){ el.input.value = draft; }
   autoGrow();
